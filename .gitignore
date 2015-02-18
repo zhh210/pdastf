@@ -1,0 +1,8 @@
+# Files that should be ignored by git
+
+*.*~
+*~
+trash/*
+*.pdf
+*.out
+*.py[cod]
