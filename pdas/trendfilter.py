@@ -103,6 +103,9 @@ class TF(object):
         t+= '{0:>10s}'.format('OBJ')
         t+= '{0:>6s}'.format('#VIO')
         t+= '{0:>10s}'.format('|VIO|')
+        t+= '{0:>6s}'.format('|neg|')
+        t+= '{0:>6s}'.format('|act|')
+        t+= '{0:>6s}'.format('|pos|')
         line = '-'*(len(t)+ 3)
         return line + '\n' + t + '\n' + line
 
@@ -114,7 +117,10 @@ class TF(object):
         mp = {'pos':self.Dx, 'neg':self.Dx, 'act':self.z - pz}
         vio = [j for i in v for j in mp[i['vfrom']][i['what']]]
         cur+= '{0:>6d}'.format(len(vio))
-        cur+= '{0:>10.2e} '.format(np.linalg.norm(vio,1))
+        cur+= '{0:>10.2e}'.format(np.linalg.norm(vio,1))
+        cur+= '{0:>6d}'.format(len(self.P.part['neg']))
+        cur+= '{0:>6d}'.format(len(self.P.part['act']))
+        cur+= '{0:>6d}'.format(len(self.P.part['pos']))
         self.collector['obj'].append(self.obj)
         self.collector['vio'].append(len(vio))
         self.collector['|vio|'].append(np.linalg.norm(vio,1))
@@ -250,6 +256,7 @@ class TFsafe(TF):
             if self.t < self.maxv:
                 self.new_partition(vio)
             else:
+                print('safeguard invoked')
                 self.new_partition(self.max_ind(vio))
 
 
