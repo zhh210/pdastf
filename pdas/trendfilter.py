@@ -160,12 +160,74 @@ class TF(object):
         plt.ylabel('value')
         plt.savefig(name)
 
+class TFsafe(TF):
+    'PDAS for TF with safe-guard'
+    def __init__(self,y,lam,order=1,mode = -1,maxv=5):
+        self.maxv = maxv
+        super(TFsafe,self).__init__(y,lam,order=1,mode = -1,)
+        self.vc = self.size + 1
+        self.t = 0
+
+    def max_vio(self,vio):
+        'Find the maximum violation'
+        P, N, A = ('pos','neg','act')
+        violation = []
+        sP, sN, sA = (self.P.part['pos'],self.P.part['neg'],self.P.part['act'])
+        Dx = self.D*self.x
+        try:
+            violation.append({'vfrom': P, 'vto': A, 'what': max([(i,-Dx[i]) for i in sP if Dx[i] < 0],key = lambda s: s[1])})
+        except ValueError:
+            violation.append({'vfrom': P, 'vto': A, 'what':(-1,-1)})
+
+        try:
+            violation.append({'vfrom': N, 'vto': A, 'what': max([(i,Dx[i]) for i in sN if Dx[i] > 0],key = lambda s: s[1])})
+        except ValueError:
+            violation.append({'vfrom': N, 'vto': A, 'what':(-1,-1)})
+
+        try:
+            violation.append({'vfrom': A, 'vto': P, 'what': max([(i,self.z[i]-1) for i in sA if self.z[i] > 1],key = lambda s: s[1])})
+        except ValueError:
+            violation.append({'vfrom': A, 'vto': P, 'what':(-1,-1)})
+
+        try:
+            violation.append({'vfrom': A, 'vto': N, 'what': max([(i,self.mode-self.z[i]) for i in sA if self.z[i] < self.mode],key = lambda s: s[1])})
+        except ValueError:
+            violation.append({'vfrom': A, 'vto': N, 'what':(-1,-1)})
+
+        violation = max(violation,key = lambda s: s['what'][1])
+        violation['what'] = [violation['what'][0]]
+        return [violation]
+
+    def pdas(self):
+        'Apply PDAS to solve the problem'
+        print(self.title)
+        while True:
+            self.new_solution()
+            vio = self.check_violation()
+            self.iter += 1
+            print(self.cur_it(vio))
+            vn = sum([len(i['what']) for i in vio])
+            if vn == 0:
+                return
+
+            if vn < self.vc: 
+                self.t = 0
+                self.vc = vn
+            else: 
+                self.t += 1
+
+            if self.t < self.maxv:
+                self.new_partition(vio)
+            else:
+                self.new_partition(self.max_vio(vio))
+
+
 if __name__=='__main__':
     D = generate_diff(order = 2, size = 4)
     D2 = generate_diff(order = 1, size = 4)
     print(D.todense())
     print(D2.todense())
 
-    d = TF(np.random.randn(200,1),0.5,order=2,mode = 0)
+    d = TF(np.random.randn(2000,1),0.5,order=2,mode = 0)
     d.pdas()
     d.plot()

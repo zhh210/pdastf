@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from pdastf.pdas.trendfilter import TF
+from pdastf.pdas.trendfilter import TF, TFsafe
 
 
 # 1: Plot for segmenting constant-shaped time series
