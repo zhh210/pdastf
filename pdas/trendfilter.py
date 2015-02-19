@@ -198,6 +198,37 @@ class TFsafe(TF):
         violation['what'] = [violation['what'][0]]
         return [violation]
 
+    def max_ind(self,vio):
+        'Find the max index of violation'
+        P, N, A = ('pos','neg','act')
+        violation = []
+        sP, sN, sA = (self.P.part['pos'],self.P.part['neg'],self.P.part['act'])
+        Dx = self.D*self.x
+        try:
+            violation.append({'vfrom': P, 'vto': A, 'what': max([i for i in sP if Dx[i] < 0])})
+        except ValueError:
+            violation.append({'vfrom': P, 'vto': A, 'what': -1})
+            
+        try:
+            violation.append({'vfrom': N, 'vto': A, 'what': max([i for i in sN if Dx[i] > 0])})
+        except ValueError:
+            violation.append({'vfrom': N, 'vto': A, 'what': -1})
+
+        try:
+            violation.append({'vfrom': A, 'vto': P, 'what': max([i for i in sA if self.z[i] > 1])})
+
+        except ValueError:
+            violation.append({'vfrom': A, 'vto': P, 'what': -1})
+
+        try:
+            violation.append({'vfrom': A, 'vto': N, 'what': max([i for i in sA if self.z[i] < self.mode])})
+        except ValueError:
+            violation.append({'vfrom': A, 'vto': N, 'what': -1})
+
+        violation = max(violation,key = lambda s: s['what'])
+        violation['what'] = [violation['what']]
+        return [violation]
+
     def pdas(self):
         'Apply PDAS to solve the problem'
         print(self.title)
@@ -219,7 +250,7 @@ class TFsafe(TF):
             if self.t < self.maxv:
                 self.new_partition(vio)
             else:
-                self.new_partition(self.max_vio(vio))
+                self.new_partition(self.max_ind(vio))
 
 
 if __name__=='__main__':
