@@ -4,6 +4,7 @@ import numpy as np
 from scipy.sparse import linalg as splinalg
 from copy import deepcopy
 import matplotlib.pyplot as plt
+from time import time
 
 def generate_diff(order = 1, size = None):
     'Recursively generate difference operator matrix'
@@ -49,8 +50,9 @@ class TF(object):
         self.z = np.zeros((self.size-order,1))
         self.mode = mode
         
-        self.status = 'Initialized'
-        self.iter = 0
+        self.info = {'status': 'Initialized'}
+        self.info['iter'] = 0
+        self.info['time'] = None
 
         self.collector = {'obj':[],'vio':[],'|vio|':[]}
 
@@ -111,7 +113,7 @@ class TF(object):
 
     def cur_it(self,v):
         'Information of current iteration'
-        cur = '{0:>4d}'.format(self.iter)
+        cur = '{0:>4d}'.format(self.info['iter'])
         cur+= '{0:>10.2e}'.format(self.obj)
         pz = np.array([min(max(i,self.mode),1) for i in self.z])[:,np.newaxis]
         mp = {'pos':self.Dx, 'neg':self.Dx, 'act':self.z - pz}
@@ -129,12 +131,15 @@ class TF(object):
     def pdas(self):
         'Apply PDAS to solve the problem'
         print(self.title)
+        start = time()
         while True:
             self.new_solution()
             vio = self.check_violation()
-            self.iter += 1
+            self.info['iter'] += 1
             print(self.cur_it(vio))
             if sum([len(i['what']) for i in vio]) == 0:
+                self.info['status'] = 'optimal'
+                self.info['time'] = time() - start
                 return
 
             self.new_partition(vio)
@@ -238,13 +243,16 @@ class TFsafe(TF):
     def pdas(self):
         'Apply PDAS to solve the problem'
         print(self.title)
+        start = time()
         while True:
             self.new_solution()
             vio = self.check_violation()
-            self.iter += 1
+            self.info['iter'] += 1
             print(self.cur_it(vio))
             vn = sum([len(i['what']) for i in vio])
             if vn == 0:
+                self.info['status'] = 'optimal'
+                self.info['time'] = time() - start
                 return
 
             if vn < self.vc: 
@@ -259,8 +267,62 @@ class TFsafe(TF):
                 print('safeguard invoked')
                 self.new_partition(self.max_ind(vio))
 
+    def pdas2(self):
+        'Another safeguard strategy'
+        print(self.title)
+        R = rolling()
+        start = time()
+        while True:
+            self.new_solution()
+            vio = self.check_violation()
+            self.info['iter'] += 1
+            print(self.cur_it(vio))
+            vn = sum([len(i['what']) for i in vio])
+            # Collect number of violations
+            R.append(vn)
+            if vn == 0:
+                self.info['status'] = 'optimal'
+                self.info['time'] = time() - start
+                return
+
+            if vn < self.vc: 
+                self.t = 0
+            else: 
+                self.t += 1
+
+            self.vc = R.mean
+
+            if self.t < self.maxv:
+                self.new_partition(vio)
+            else:
+                print('safeguard invoked')
+                self.new_partition(self.max_ind(vio))
+
+
+class rolling(object):
+    'A help class to store rolling average'
+    def __init__(self,size = 5):
+        self.size = size
+        self.array = []
+        self.mean = 0
+        self.cur = 0
+
+    def append(self,item):
+        'Append one item'
+        if len(self.array) < self.size:
+            self.array.append(item)
+            self.mean = float(sum(self.array))/len(self.array)
+        else:
+            self.mean -= self.array[self.cur]/self.size
+            self.array[self.cur] = item
+            self.mean += item/self.size            
+            self.cur = (self.cur + 1)%self.size
 
 if __name__=='__main__':
+    t = rolling()
+    for i in range(1,20):
+        t.append(i)
+        print(t.cur,t.array,t.mean)
     D = generate_diff(order = 2, size = 4)
     D2 = generate_diff(order = 1, size = 4)
     print(D.todense())
