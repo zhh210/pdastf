@@ -115,8 +115,9 @@ class TF(object):
         'Information of current iteration'
         cur = '{0:>4d}'.format(self.info['iter'])
         cur+= '{0:>10.2e}'.format(self.obj)
-        pz = np.array([min(max(i,self.mode),1) for i in self.z])[:,np.newaxis]
-        mp = {'pos':self.Dx, 'neg':self.Dx, 'act':self.z - pz}
+        pz = np.array([min(max(i[0],self.mode),1) for i in self.z])[:,np.newaxis]
+        Dx = self.D*self.x
+        mp = {'pos':Dx, 'neg':Dx, 'act':self.z - pz}
         vio = [j for i in v for j in mp[i['vfrom']][i['what']]]
         cur+= '{0:>6d}'.format(len(vio))
         cur+= '{0:>10.2e}'.format(np.linalg.norm(vio,1))
