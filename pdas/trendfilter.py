@@ -319,6 +319,102 @@ class rolling(object):
             self.mean += item/self.size            
             self.cur = (self.cur + 1)%self.size
 
+class TFsafeG(TFsafe):
+    'PDAS for TF with safe-guard, greedy roll back to best available'
+    def __init__(self,y,lam,order=1,mode = -1,maxv=5):
+        super(TFsafeG,self).__init__(y,lam,order=order,mode = mode,maxv = maxv)
+        self.bestP = deepcopy(self.P)
+        self.bestkkt = np.inf
+
+    def _roll_back(self):
+        'Roll back to best available partition'
+        self.P = deepcopy(self.bestP)
+
+    def kkt(self,v):
+        Dx = self.Dx
+        pz = np.array([min(max(i[0],self.mode),1) for i in self.z])[:,np.newaxis]
+        mp = {'pos':Dx, 'neg':Dx, 'act':self.z - pz}
+        vio = [j for i in v for j in mp[i['vfrom']][i['what']]]
+        return np.linalg.norm(vio,1)
+
+    def pdas(self):
+        'Apply PDAS to solve the problem'
+        print(self.title)
+        start = time()
+        while True:
+            self.new_solution()
+            vio = self.check_violation()
+            self.info['iter'] += 1
+            print(self.cur_it(vio))
+            vn = sum([len(i['what']) for i in vio])
+            if vn == 0:
+                self.info['status'] = 'optimal'
+                self.info['time'] = time() - start
+                return
+
+            if vn < self.vc:
+                # A newer best available partition found
+                self.t = 0
+                self.vc = vn
+                self.bestP = deepcopy(self.P)
+            else: 
+                # Violation up by once
+                self.t += 1
+
+            if self.t < self.maxv:
+                self.new_partition(vio)
+            else:
+                print('safeguard invoked')
+                self._roll_back()
+                vio = self.check_violation()
+                vn = sum([len(i['what']) for i in vio])
+                while vn >= self.vc:
+                    self.new_partition(self.max_ind(vio))
+                    self.new_solution()
+                    vio = self.check_violation()
+                    self.info['iter'] += 1
+                    print(self.cur_it(vio))
+                    vn = sum([len(i['what']) for i in vio])
+
+    def pdas2(self):
+        'Apply PDAS to solve the problem'
+        print(self.title)
+        start = time()
+        while True:
+            self.new_solution()
+            vio = self.check_violation()
+            self.info['iter'] += 1
+            print(self.cur_it(vio))
+            vn = self.kkt(vio)
+            if vn < 1.0e-6:
+                self.info['status'] = 'optimal'
+                self.info['time'] = time() - start
+                return
+
+            if vn < self.bestkkt:
+                # A newer best available partition found
+                self.t = 0
+                self.bestkkt = vn
+                self.bestP = deepcopy(self.P)
+            else: 
+                # Violation up by once
+                self.t += 1
+
+            if self.t < self.maxv:
+                self.new_partition(vio)
+            else:
+                print('safeguard invoked')
+                self._roll_back()
+                vio = self.check_violation()
+                vn = self.kkt(vio)
+                while vn >= self.bestkkt:
+                    self.new_partition(self.max_ind(vio))
+                    self.new_solution()
+                    vio = self.check_violation()
+                    #self.info['iter'] += 1
+                    print(self.cur_it(vio))
+                    vn = self.kkt(vio)
+
 if __name__=='__main__':
     t = rolling()
     for i in range(1,20):
