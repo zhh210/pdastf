@@ -53,7 +53,7 @@ class TF(object):
         self.info = {'status': 'Initialized'}
         self.info['iter'] = 0
         self.info['time'] = None
-
+        self.silence = True
         self.collector = {'obj':[],'vio':[],'|vio|':[]}
 
     def new_partition(self,violation):
@@ -137,7 +137,7 @@ class TF(object):
             self.new_solution()
             vio = self.check_violation()
             self.info['iter'] += 1
-            print(self.cur_it(vio))
+            if not self.silence: print(self.cur_it(vio))
             if sum([len(i['what']) for i in vio]) == 0:
                 self.info['status'] = 'optimal'
                 self.info['time'] = time() - start
@@ -249,7 +249,7 @@ class TFsafe(TF):
             self.new_solution()
             vio = self.check_violation()
             self.info['iter'] += 1
-            print(self.cur_it(vio))
+            if not self.silence: print(self.cur_it(vio))
             vn = sum([len(i['what']) for i in vio])
             if vn == 0:
                 self.info['status'] = 'optimal'
@@ -277,7 +277,7 @@ class TFsafe(TF):
             self.new_solution()
             vio = self.check_violation()
             self.info['iter'] += 1
-            print(self.cur_it(vio))
+            if not self.silence: print(self.cur_it(vio))
             vn = sum([len(i['what']) for i in vio])
             # Collect number of violations
             R.append(vn)
