@@ -55,8 +55,12 @@ if __name__=='__main__':
             random.seed(seed_partition)
             prob = TF(dat[:,np.newaxis],1000,order=order,mode=mode)
             prob.pdas()
-            iterations['pdas'].append(prob.info['iter'])
-            times['pdas'].append(prob.info['time'])
+            if prob.info['status'] == 'optimal':
+                iterations['pdas'].append(prob.info['iter'])
+                times['pdas'].append(prob.info['time'])
+            else:
+                iterations['pdas'].append(0)
+                times['pdas'].append(0)
             del prob
 
             # By pdas with safeguard
@@ -64,8 +68,12 @@ if __name__=='__main__':
             random.seed(seed_partition)
             prob = TFsafe(dat[:,np.newaxis],1000,order=order,mode=mode)
             prob.pdas()
-            iterations['safe1'].append(prob.info['iter'])
-            times['safe1'].append(prob.info['time'])
+            if prob.info['status'] == 'optimal':
+                iterations['pdas'].append(prob.info['iter'])
+                times['pdas'].append(prob.info['time'])
+            else:
+                iterations['pdas'].append(0)
+                times['pdas'].append(0)
             del prob
 
             # By pdas with safeguard 2
@@ -73,8 +81,12 @@ if __name__=='__main__':
             random.seed(seed_partition)
             prob = TFsafe(dat[:,np.newaxis],1000,order=order,mode=mode)
             prob.pdas2()
-            iterations['safe2'].append(prob.info['iter'])
-            times['safe2'].append(prob.info['time'])
+            if prob.info['status'] == 'optimal':
+                iterations['pdas'].append(prob.info['iter'])
+                times['pdas'].append(prob.info['time'])
+            else:
+                iterations['pdas'].append(0)
+                times['pdas'].append(0)
             del prob
 
             # By pdas with safeguard 3
@@ -82,8 +94,12 @@ if __name__=='__main__':
             random.seed(seed_partition)
             prob = TFsafeG(dat[:,np.newaxis],1000,order=order,mode=mode)
             prob.pdas2()
-            iterations['safe3'].append(prob.info['iter'])
-            times['safe3'].append(prob.info['time'])
+            if prob.info['status'] == 'optimal':
+                iterations['pdas'].append(prob.info['iter'])
+                times['pdas'].append(prob.info['time'])
+            else:
+                iterations['pdas'].append(0)
+                times['pdas'].append(0)
             del prob
 
         collector = {'iterations':iterations, 'times':times}
