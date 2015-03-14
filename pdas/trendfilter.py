@@ -36,7 +36,7 @@ class partition(object):
             s.append(i)
             
 class TF(object):
-    default_option = {'max_it':400, 'opt_tol':1.0e-6}
+    default_option = {'max_it':1000, 'opt_tol':1.0e-6}
     def __init__(self,y,lam,order=1,mode = -1):
         self.y = y
         self.lam = lam
@@ -176,7 +176,7 @@ class TFsafe(TF):
     'PDAS for TF with safe-guard'
     def __init__(self,y,lam,order=1,mode = -1,maxv=5):
         self.maxv = maxv
-        super(TFsafe,self).__init__(y,lam,order=1,mode = -1,)
+        super(TFsafe,self).__init__(y,lam,order=order,mode = mode,)
         self.vc = self.size + 1
         self.t = 0
 
