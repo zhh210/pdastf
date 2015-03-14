@@ -36,7 +36,7 @@ class partition(object):
             s.append(i)
             
 class TF(object):
-    default_option = {'max_it':100, 'opt_tol':1.0e-6}
+    default_option = {'max_it':400, 'opt_tol':1.0e-6}
     def __init__(self,y,lam,order=1,mode = -1):
         self.y = y
         self.lam = lam
@@ -53,7 +53,7 @@ class TF(object):
         self.info = {'status': 'Initialized'}
         self.info['iter'] = 0
         self.info['time'] = None
-        self.silence = True
+        self.silence = False
         self.collector = {'obj':[],'vio':[],'|vio|':[]}
 
     def new_partition(self,violation):
@@ -133,7 +133,7 @@ class TF(object):
         'Apply PDAS to solve the problem'
         print(self.title)
         start = time()
-        while True:
+        for i in range(TF.default_option['max_it']):
             self.new_solution()
             vio = self.check_violation()
             self.info['iter'] += 1
@@ -245,7 +245,7 @@ class TFsafe(TF):
         'Apply PDAS to solve the problem'
         print(self.title)
         start = time()
-        while True:
+        for i in range(TF.default_option['max_it']):
             self.new_solution()
             vio = self.check_violation()
             self.info['iter'] += 1
@@ -273,7 +273,7 @@ class TFsafe(TF):
         print(self.title)
         R = rolling()
         start = time()
-        while True:
+        for i in range(TF.default_option['max_it']):
             self.new_solution()
             vio = self.check_violation()
             self.info['iter'] += 1
@@ -341,11 +341,11 @@ class TFsafeG(TFsafe):
         'Apply PDAS to solve the problem'
         print(self.title)
         start = time()
-        while True:
+        for i in range(TF.default_option['max_it']):
             self.new_solution()
             vio = self.check_violation()
             self.info['iter'] += 1
-            print(self.cur_it(vio))
+            if not self.silence: print(self.cur_it(vio))
             vn = sum([len(i['what']) for i in vio])
             if vn == 0:
                 self.info['status'] = 'optimal'
@@ -374,17 +374,22 @@ class TFsafeG(TFsafe):
                     vio = self.check_violation()
                     self.info['iter'] += 1
                     print(self.cur_it(vio))
-                    vn = sum([len(i['what']) for i in vio])
+                    if not self.silence: vn = sum([len(i['what']) for i in vio])
+
+                    if vn == 0:
+                        self.info['status'] = 'optimal'
+                        self.info['time'] = time() - start
+                        return
 
     def pdas2(self):
         'Apply PDAS to solve the problem'
         print(self.title)
         start = time()
-        while True:
+        for i in range(TF.default_option['max_it']):
             self.new_solution()
             vio = self.check_violation()
             self.info['iter'] += 1
-            print(self.cur_it(vio))
+            if not self.silence: print(self.cur_it(vio))
             vn = self.kkt(vio)
             if vn < 1.0e-6:
                 self.info['status'] = 'optimal'
@@ -411,9 +416,13 @@ class TFsafeG(TFsafe):
                     self.new_partition(self.max_ind(vio))
                     self.new_solution()
                     vio = self.check_violation()
-                    #self.info['iter'] += 1
-                    print(self.cur_it(vio))
+                    self.info['iter'] += 1
+                    if not self.silence: print(self.cur_it(vio))
                     vn = self.kkt(vio)
+                    if vn < 1.0e-6:
+                        self.info['status'] = 'optimal'
+                        self.info['time'] = time() - start
+                        return
 
 if __name__=='__main__':
     t = rolling()

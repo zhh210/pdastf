@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import random
-from pdastf.pdas.trendfilter import TF, TFsafe
+from pdastf.pdas.trendfilter import TF, TFsafe, TFsafeG
 from itertools import product
 
 
@@ -11,17 +11,19 @@ def plot(x,collector,fname = 'test_randomtf.png'):
     plt.figure(figsize = (6,6))
     plt.title('Trend of indicators')
     plt.subplot(2,1,1)
-    plt.plot(x,collector['iterations']['pdas'],'ro-',label='pdas',ms=2)
-    plt.plot(x,collector['iterations']['safe1'],'bo-',label='safe-1',ms=2)
-    plt.plot(x,collector['iterations']['safe2'],'go-',label='safe-2',ms=2)
+    plt.plot(x,collector['iterations']['pdas'],'ro-',label='pdas',ms=3)
+    plt.plot(x,collector['iterations']['safe1'],'bo-',label='safe-1',ms=3)
+    plt.plot(x,collector['iterations']['safe2'],'go-',label='safe-2',ms=3)
+    plt.plot(x,collector['iterations']['safe3'],'mo-',label='safe-3',ms=3)
     plt.ylabel('Iteration')
     plt.xlabel('Size')
     plt.legend(prop={'size':6},loc=2)
 
     plt.subplot(2,1,2)
-    plt.plot(x,collector['times']['pdas'],'ro-',label='pdas',ms=2)
-    plt.plot(x,collector['times']['safe1'],'bo-',label='safe-1',ms=2)
-    plt.plot(x,collector['times']['safe2'],'go-',label='safe-2',ms=2)
+    plt.plot(x,collector['times']['pdas'],'ro-',label='pdas',ms=3)
+    plt.plot(x,collector['times']['safe1'],'bo-',label='safe-1',ms=3)
+    plt.plot(x,collector['times']['safe2'],'go-',label='safe-2',ms=3)
+    plt.plot(x,collector['times']['safe3'],'mo-',label='safe-3',ms=3)
     plt.ylabel('Time')
     plt.xlabel('Size')
     plt.legend(prop={'size':6},loc=2)
@@ -38,9 +40,9 @@ if __name__=='__main__':
     np.random.seed(seed_data)
 
 
-    for order, mode in product((1,2),(-1,0)):
-        iterations = {'pdas':[],'safe1':[],'safe2':[]}
-        times = {'pdas':[],'safe1':[],'safe2':[]}
+    for order, mode in product((2,1),(-1,0)):
+        iterations = {'pdas':[],'safe1':[],'safe2':[],'safe3':[]}
+        times = {'pdas':[],'safe1':[],'safe2':[],'safe3':[]}
 
 
         for i in range(1,size):
@@ -74,5 +76,15 @@ if __name__=='__main__':
             iterations['safe2'].append(prob.info['iter'])
             times['safe2'].append(prob.info['time'])
             del prob
+
+            # By pdas with safeguard 3
+            print('--- by pdas with safeguard 3 roll back --')
+            random.seed(seed_partition)
+            prob = TFsafeG(dat[:,np.newaxis],1000,order=order,mode=mode)
+            prob.pdas2()
+            iterations['safe3'].append(prob.info['iter'])
+            times['safe3'].append(prob.info['time'])
+            del prob
+
         collector = {'iterations':iterations, 'times':times}
         plot([i for i in range(1,size)],collector,fname = 'order'+str(order)+'mode'+str(mode)+'.pdf')
